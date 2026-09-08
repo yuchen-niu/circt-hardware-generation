@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# CIRCT / LLVM build artifacts
+build/
+*.o
+*.a
+*.so
+
+# ModelSim / Questa
+work/
+transcript
+vsim.wlf
+*.wlf
+
+# Generated temporary/raw artifacts
+*_roundtrip_raw.sv
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
