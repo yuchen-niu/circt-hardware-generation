@@ -4,40 +4,23 @@
 
 ## Overview
 
-This project explores compiler-based hardware generation using **CIRCT/MLIR**. I began by studying how SystemVerilog designs are translated into CIRCT intermediate representations (IR), transformed, and emitted back to SystemVerilog. I then explored **PyCDE** as a Python-based hardware-generation front end and developed a parameterized hardware generator. The current stage investigates a higher-level **stochastic computing (SC) circuit generator**, where application-level operations are represented in a custom SC IR and lowered into PyCDE/CIRCT hardware operations.
+This project explores compiler-based hardware generation using **CIRCT/MLIR**. I began by studying how SystemVerilog designs are represented, transformed, and emitted through CIRCT. I then explored **PyCDE** as a Python hardware-generation front end and developed a parameterized processing-element generator. The current stage investigates a higher-level **stochastic computing (SC) circuit generator** that separates application-level SC semantics from low-level hardware implementation.
 
-The project has progressed through three main stages:
+## Research Question
 
-```text
-SystemVerilog
-    ↓
-CIRCT MLIR
-    ↓
-CIRCT lowering
-    ↓
-SystemVerilog
-```
+**Can stochastic-computing applications be expressed using application-level operations and automatically lowered into hardware while keeping SC semantics separate from low-level RTL implementation?**
+
+## Project Evolution
 
 ```text
-Python / PyCDE
-    ↓
-CIRCT MLIR
-    ↓
-SystemVerilog
-```
+RTL round-trip
+SystemVerilog → CIRCT MLIR → CIRCT lowering → SystemVerilog → ModelSim verification
 
-```text
-Application-level SC description
-    ↓
-Custom SC IR
-    ↓
-SC-specific lowering
-    ↓
-PyCDE / CIRCT
-    ↓
-CIRCT MLIR
-    ↓
-SystemVerilog
+Python hardware generation
+Python / PyCDE → CIRCT MLIR → SystemVerilog
+
+SC generator prototype
+Application → Custom SC IR → SC-specific lowering → PyCDE / CIRCT → SystemVerilog
 ```
 
 ## Key Contributions
@@ -46,59 +29,89 @@ SystemVerilog
 - Developed a parameterized **PyCDE processing-element array** to study Python-based hardware generation and CIRCT IR construction.
 - Designed a custom high-level **stochastic-computing representation** that separates application semantics from hardware implementation.
 - Implemented recursive **SC-specific lowering** from `SCAbsDiff` and `SCAverage` operations to PyCDE/CIRCT hardware primitives.
-- Demonstrated the prototype on **Roberts edge detection**, generating CIRCT MLIR and SystemVerilog from an application-level SC description.
+- Demonstrated the prototype on **Roberts edge detection**, producing CIRCT MLIR and SystemVerilog from an application-level SC description.
 
-## 1. RTL Round-Trip Experiments
+## Results at a Glance
+
+| Stage | Implementation | Result |
+| --- | --- | --- |
+| RTL round-trip | 8-bit counter and traffic-light FSM | Original and CIRCT-generated RTL were compared in ModelSim to verify matching behavior |
+| PyCDE generator | Parameterized 4-PE array | A Python generation-time loop elaborates into four parallel PE instances in the generated hardware |
+| SC generator | Roberts edge detector | High-level `SCAbsDiff` / `SCAverage` operations lower to two XORs and one MUX in CIRCT MLIR |
+
+## 1. Basic CIRCT Example
+
+The repository includes a small 8-bit adder as an introductory example of the relationship between RTL and CIRCT IR:
+
+- [`adder.sv`](basic_examples/adder/adder.sv) — SystemVerilog source
+- [`adder.mlir`](basic_examples/adder/adder.mlir) — equivalent CIRCT `hw` / `comb` representation
+
+## 2. RTL Round-Trip Experiments
 
 I used an 8-bit counter and a traffic-light FSM to study how RTL constructs are represented in CIRCT. The experiments included:
 
 - SystemVerilog → CIRCT MLIR using `circt-verilog`
 - Inspection of `hw`, `comb`, and `seq` operations
 - CIRCT lowering and SystemVerilog emission
-- ModelSim comparison between the original and CIRCT-generated RTL
-- Direct modification of counter MLIR to verify that IR-level changes alter the generated hardware behavior
+- ModelSim comparison between original and CIRCT-generated RTL
+- Direct modification of counter MLIR to verify that IR-level changes alter generated hardware behavior
 
-The counter and FSM testbenches are included in `rtl_roundtrip/`.
+The relevant source, generated IR/RTL, and testbenches are under [`rtl_roundtrip/`](rtl_roundtrip/).
 
-## 2. Python / PyCDE Hardware Generation
+## 3. Python / PyCDE Hardware Generation
 
 I next explored **PyCDE** as a Python front end for CIRCT. A parameterized processing-element array was implemented in which a Python `for` loop generates multiple parallel PE instances during hardware generation.
 
-This experiment helped me study the mapping between PyCDE and CIRCT constructs, including:
+Key implementation:
 
-- `Bits` and `UInt`
-- `hw.module`
-- `hw.instance`
-- `comb.extract`
-- `comb.concat`
-- `hwarith.add`
-- CIRCT transformations through `system.run_passes()`
+- [`pe_array.py`](pycde_examples/pe_array.py) — parameterized PyCDE generator
+- [`PEArray.mlir`](pycde_examples/generated/PEArray.mlir) — generated CIRCT IR before lowering
+- [`PEArray.sv`](pycde_examples/generated/hw/PEArray.sv) — emitted SystemVerilog
 
-The generated MLIR shows that the Python loop is elaborated into concrete parallel hardware instances before SystemVerilog emission.
+This experiment helped me study the mapping between PyCDE and CIRCT constructs, including `Bits`, `UInt`, `hw.module`, `hw.instance`, `comb.extract`, `comb.concat`, `hwarith.add`, and CIRCT transformation passes.
 
-## 3. Stochastic Computing Circuit Generator Prototype
+## 4. Stochastic Computing Circuit Generator Prototype
 
 The current stage explores how an application-level stochastic-computing description can be lowered into hardware.
 
-Using **Roberts edge detection** as the first application, I separated the design into four layers:
+### Prototype evolution
+
+The first prototype directly mapped helper functions to PyCDE hardware operations:
+
+```text
+SC helper functions → XOR / MUX → PyCDE / CIRCT
+```
+
+That version is preserved in [`sc_edge_v1.py`](sc_generator/prototypes/sc_edge_v1.py).
+
+The second version separates the application description, SC representation, and lowering logic:
 
 ```text
 roberts_design.py
-    ↓
+        ↓
 Application-level Roberts algorithm
 
 sc_ir.py
-    ↓
+        ↓
 Custom high-level SC representation
 
 sc_lowering.py
-    ↓
+        ↓
 SC-specific lowering rules
 
 sc_edge_v2.py
-    ↓
-PyCDE/CIRCT integration
+        ↓
+PyCDE / CIRCT integration
 ```
+
+Key implementation files:
+
+- [`sc_ir.py`](sc_generator/sc_ir.py) — high-level SC expression representation
+- [`roberts_design.py`](sc_generator/roberts_design.py) — application-level Roberts description
+- [`sc_lowering.py`](sc_generator/sc_lowering.py) — recursive SC-specific lowering
+- [`sc_edge_v2.py`](sc_generator/sc_edge_v2.py) — PyCDE/CIRCT integration and output generation
+- [`RobertsEdge.mlir`](sc_generator/generated/RobertsEdge.mlir) — generated CIRCT IR
+- [`RobertsEdge.sv`](sc_generator/generated/hw/RobertsEdge.sv) — emitted SystemVerilog
 
 The current high-level SC representation includes:
 
@@ -115,7 +128,7 @@ SCAbsDiff  → XOR
 SCAverage  → MUX with random select
 ```
 
-For Roberts edge detection, the high-level expression
+For Roberts edge detection, the application-level expression
 
 ```text
 SCAverage(
@@ -124,14 +137,19 @@ SCAverage(
 )
 ```
 
-is recursively lowered into two XOR operations and one multiplexer. PyCDE then constructs CIRCT operations such as `comb.xor` and `comb.mux`, which CIRCT lowers and emits as SystemVerilog.
+is recursively lowered into two XOR operations and one multiplexer. PyCDE constructs the corresponding CIRCT operations (`comb.xor` and `comb.mux`), which CIRCT then lowers and emits as SystemVerilog.
 
-This creates a clear separation between **what the application computes** and **how that computation is implemented in hardware**.
+This architecture creates a clear separation between **what the application computes** and **how the computation is implemented in hardware**.
 
 ## Repository Structure
 
 ```text
 .
+├── basic_examples/
+│   └── adder/
+│       ├── adder.sv
+│       └── adder.mlir
+│
 ├── rtl_roundtrip/
 │   ├── counter/
 │   └── traffic_light_fsm/
@@ -151,26 +169,38 @@ This creates a clear separation between **what the application computes** and **
     ├── roberts_design.py
     ├── sc_lowering.py
     ├── sc_edge_v2.py
+    ├── prototypes/
+    │   └── sc_edge_v1.py
     └── generated/
         ├── RobertsEdge.mlir
         └── hw/
             └── RobertsEdge.sv
 ```
 
-## Tools and Technologies
+## Environment
 
-- CIRCT
-- LLVM / MLIR
+Development and testing were performed under **WSL2 Ubuntu**.
+
+Main tools and dependencies:
+
+- CIRCT / LLVM / MLIR
+- Python 3
 - PyCDE
 - SystemVerilog
-- Python
-- ModelSim
-- WSL2 / Ubuntu
+- ModelSim / QuestaSim
 - Git
+
+For the Python examples, a typical environment setup is:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --pre pycde
+```
 
 ## Running the PyCDE Examples
 
-With PyCDE installed, the Python hardware generators can be run from the repository root:
+From the repository root:
 
 ```bash
 python pycde_examples/simple_or.py
@@ -178,12 +208,20 @@ python pycde_examples/pe_array.py
 python sc_generator/sc_edge_v2.py
 ```
 
-Each script writes its generated artifacts into the corresponding `generated/` directory. PyCDE emits SystemVerilog under `generated/hw/`.
+Each script writes generated artifacts into its corresponding `generated/` directory. PyCDE emits SystemVerilog under `generated/hw/`.
 
 ## Current Direction
 
 The next step is to make the SC generator more stochastic-computing-aware by representing random-source requirements, correlation/uncorrelation constraints between stochastic streams, shared random resources, and additional SC applications such as gamma correction.
 
+## Reference
+
+The Roberts edge-detection case study is based on the stochastic circuit mapping presented in:
+
+A. Alaghi, C. Li, and J. P. Hayes, **“Stochastic Circuits for Real-Time Image-Processing Applications,”** *Proceedings of the 50th Annual Design Automation Conference (DAC)*, 2013.
+
+In that work, the Roberts stochastic implementation uses two XOR gates for the absolute-difference operations and a multiplexer for averaging, with correlated stochastic inputs and a random MUX select signal.
+
 ## Notes
 
-Selected generated MLIR and SystemVerilog files are included so that the transformation from source description to CIRCT IR and emitted RTL can be inspected directly. CIRCT-generated source-location comments containing local filesystem paths have been removed from the checked-in SystemVerilog artifacts for readability; the generated RTL logic is unchanged.
+Selected generated MLIR and SystemVerilog files are included so the transformation from source description to CIRCT IR and emitted RTL can be inspected directly. CIRCT-generated source-location comments containing local filesystem paths have been removed from the checked-in SystemVerilog artifacts for readability; the generated RTL logic is unchanged.
