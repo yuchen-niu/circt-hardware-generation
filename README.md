@@ -20,14 +20,14 @@ Python hardware generation
 Python / PyCDE → CIRCT MLIR → SystemVerilog
 
 SC generator prototype
-Application → Custom SC IR → SC-specific lowering → PyCDE / CIRCT → SystemVerilog
+Application → Custom Python-level SC IR → SC-specific lowering → PyCDE / CIRCT → SystemVerilog
 ```
 
 ## Key Contributions
 
 - Built and validated a **SystemVerilog → CIRCT MLIR → SystemVerilog** round-trip flow using counter and FSM designs, with behavioral comparison in ModelSim.
 - Developed a parameterized **PyCDE processing-element array** to study Python-based hardware generation and CIRCT IR construction.
-- Designed a custom high-level **stochastic-computing representation** that separates application semantics from hardware implementation.
+- Designed a custom **Python-level stochastic-computing IR** that separates application semantics from hardware implementation.
 - Implemented recursive **SC-specific lowering** from `SCAbsDiff` and `SCAverage` operations to PyCDE/CIRCT hardware primitives.
 - Demonstrated the prototype on **Roberts edge detection**, producing CIRCT MLIR and SystemVerilog from an application-level SC description.
 
@@ -98,7 +98,7 @@ SC helper functions → XOR / MUX → PyCDE / CIRCT
 
 That version is preserved in [`sc_edge_v1.py`](sc_generator/prototypes/sc_edge_v1.py).
 
-The second version separates the application description, SC representation, and lowering logic:
+The second version separates the application description, Python-level SC representation, and lowering logic:
 
 ```text
 roberts_design.py
@@ -107,7 +107,7 @@ Application-level Roberts algorithm
 
 sc_ir.py
         ↓
-Custom high-level SC representation
+Custom Python-level SC IR
 
 sc_lowering.py
         ↓
@@ -120,14 +120,14 @@ PyCDE / CIRCT integration
 
 Key implementation files:
 
-- [`sc_ir.py`](sc_generator/sc_ir.py) — high-level SC expression representation
+- [`sc_ir.py`](sc_generator/sc_ir.py) — custom Python-level SC expression representation
 - [`roberts_design.py`](sc_generator/roberts_design.py) — application-level Roberts description
 - [`sc_lowering.py`](sc_generator/sc_lowering.py) — recursive SC-specific lowering
 - [`sc_edge_v2.py`](sc_generator/sc_edge_v2.py) — PyCDE/CIRCT integration and output generation
 - [`RobertsEdge.mlir`](sc_generator/generated/RobertsEdge.mlir) — generated CIRCT IR
 - [`RobertsEdge.sv`](sc_generator/generated/hw/RobertsEdge.sv) — emitted SystemVerilog
 
-The current high-level SC representation includes:
+The current Python-level SC representation includes:
 
 ```text
 SCInput
