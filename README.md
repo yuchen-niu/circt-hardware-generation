@@ -58,6 +58,20 @@ I used an 8-bit counter and a traffic-light FSM to study how RTL constructs are 
 
 The relevant source, generated IR/RTL, and testbenches are under [`rtl_roundtrip/`](rtl_roundtrip/).
 
+### Counter round-trip verification
+
+The original counter RTL and CIRCT-generated counter were instantiated side by side in [`tb_counter_compare.sv`](rtl_roundtrip/counter/tb_counter_compare.sv). The testbench compares `count_original` and `count_circt` cycle-by-cycle and also checks both against an expected count value.
+
+![Counter ModelSim round-trip verification](docs/images/counter_roundtrip_modelsim.png)
+
+### Traffic-light FSM round-trip verification
+
+The same comparison was performed for the traffic-light FSM using [`tb_traffic_light_compare.sv`](rtl_roundtrip/traffic_light_fsm/tb_traffic_light_compare.sv). The original and generated designs are compared for state and red/yellow/green outputs across multiple complete FSM cycles.
+
+![Traffic-light FSM ModelSim round-trip verification](docs/images/fsm_roundtrip_modelsim.png)
+
+These simulations provide direct behavioral evidence that the tested CIRCT round-trip preserves the functionality of both a simple sequential design and a more structured FSM.
+
 ## 3. Python / PyCDE Hardware Generation
 
 I next explored **PyCDE** as a Python front end for CIRCT. A parameterized processing-element array was implemented in which a Python `for` loop generates multiple parallel PE instances during hardware generation.
@@ -164,17 +178,22 @@ This architecture creates a clear separation between **what the application comp
 │           ├── PE.sv
 │           └── PEArray.sv
 │
-└── sc_generator/
-    ├── sc_ir.py
-    ├── roberts_design.py
-    ├── sc_lowering.py
-    ├── sc_edge_v2.py
-    ├── prototypes/
-    │   └── sc_edge_v1.py
-    └── generated/
-        ├── RobertsEdge.mlir
-        └── hw/
-            └── RobertsEdge.sv
+├── sc_generator/
+│   ├── sc_ir.py
+│   ├── roberts_design.py
+│   ├── sc_lowering.py
+│   ├── sc_edge_v2.py
+│   ├── prototypes/
+│   │   └── sc_edge_v1.py
+│   └── generated/
+│       ├── RobertsEdge.mlir
+│       └── hw/
+│           └── RobertsEdge.sv
+│
+└── docs/
+    └── images/
+        ├── counter_roundtrip_modelsim.png
+        └── fsm_roundtrip_modelsim.png
 ```
 
 ## Environment
