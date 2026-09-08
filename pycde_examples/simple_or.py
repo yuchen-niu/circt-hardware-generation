@@ -1,6 +1,9 @@
-from pycde import Input, Output, Module, System
-from pycde import generator
+from pathlib import Path
+
+from pycde import Input, Output, Module, System, generator
 from pycde.types import Bits
+
+OUTPUT_DIR = Path(__file__).resolve().parent / "generated"
 
 
 class SimpleOr(Module):
@@ -16,7 +19,7 @@ class SimpleOr(Module):
 system = System(
     [SimpleOr],
     name="SimpleOrSystem",
-    output_directory="simple_or_output"
+    output_directory=str(OUTPUT_DIR)
 )
 
 system.compile()
