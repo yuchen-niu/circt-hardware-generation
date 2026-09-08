@@ -18,6 +18,8 @@ vsim.wlf
 
 # Generated temporary/raw artifacts
 *_roundtrip_raw.sv
+**/generated/**/*.tcl
+**/generated/**/filelist.f
 
 # Editors / OS
 .vscode/
