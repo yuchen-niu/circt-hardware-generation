@@ -1,8 +1,6 @@
 # CIRCT Hardware Generation and Stochastic Computing Circuit Generator
 
-**Undergraduate Research Project**  
-**Supervisor:** Julie Hsiao  
-**Status:** Ongoing
+**Undergraduate Research Project — Ongoing**
 
 ## Overview
 
@@ -41,6 +39,14 @@ CIRCT MLIR
     ↓
 SystemVerilog
 ```
+
+## Key Contributions
+
+- Built and validated a **SystemVerilog → CIRCT MLIR → SystemVerilog** round-trip flow using counter and FSM designs, with behavioral comparison in ModelSim.
+- Developed a parameterized **PyCDE processing-element array** to study Python-based hardware generation and CIRCT IR construction.
+- Designed a custom high-level **stochastic-computing representation** that separates application semantics from hardware implementation.
+- Implemented recursive **SC-specific lowering** from `SCAbsDiff` and `SCAverage` operations to PyCDE/CIRCT hardware primitives.
+- Demonstrated the prototype on **Roberts edge detection**, generating CIRCT MLIR and SystemVerilog from an application-level SC description.
 
 ## 1. RTL Round-Trip Experiments
 
@@ -129,16 +135,26 @@ This creates a clear separation between **what the application computes** and **
 ├── rtl_roundtrip/
 │   ├── counter/
 │   └── traffic_light_fsm/
+│
 ├── pycde_examples/
 │   ├── simple_or.py
 │   ├── pe_array.py
 │   └── generated/
+│       ├── PEArray.mlir
+│       └── hw/
+│           ├── SimpleOr.sv
+│           ├── PE.sv
+│           └── PEArray.sv
+│
 └── sc_generator/
     ├── sc_ir.py
     ├── roberts_design.py
     ├── sc_lowering.py
     ├── sc_edge_v2.py
     └── generated/
+        ├── RobertsEdge.mlir
+        └── hw/
+            └── RobertsEdge.sv
 ```
 
 ## Tools and Technologies
@@ -152,10 +168,22 @@ This creates a clear separation between **what the application computes** and **
 - WSL2 / Ubuntu
 - Git
 
+## Running the PyCDE Examples
+
+With PyCDE installed, the Python hardware generators can be run from the repository root:
+
+```bash
+python pycde_examples/simple_or.py
+python pycde_examples/pe_array.py
+python sc_generator/sc_edge_v2.py
+```
+
+Each script writes its generated artifacts into the corresponding `generated/` directory. PyCDE emits SystemVerilog under `generated/hw/`.
+
 ## Current Direction
 
 The next step is to make the SC generator more stochastic-computing-aware by representing random-source requirements, correlation/uncorrelation constraints between stochastic streams, shared random resources, and additional SC applications such as gamma correction.
 
 ## Notes
 
-Selected generated MLIR and SystemVerilog files are included so that the transformation from source description to CIRCT IR and emitted RTL can be inspected directly.
+Selected generated MLIR and SystemVerilog files are included so that the transformation from source description to CIRCT IR and emitted RTL can be inspected directly. CIRCT-generated source-location comments containing local filesystem paths have been removed from the checked-in SystemVerilog artifacts for readability; the generated RTL logic is unchanged.
